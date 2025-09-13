@@ -14,9 +14,10 @@ mouse_queue = queue.Queue(maxsize=10)
 client_connected = False
 gui_root = None
 gui_should_close = False 
+gui_thread = None 
 
 pyautogui.FAILSAFE = False
-pyautogui.PAUSE = 0
+pyautogui.PAUSE = 0 
 
 def generate_password():
     return ''.join(secrets.choice(string.ascii_uppercase) for _ in range(10))
@@ -32,7 +33,6 @@ def get_local_ip():
         return "127.0.0.1"
 
 def close_gui_safely():
-    """Ferme la GUI de manière thread-safe"""
     global gui_root, gui_should_close
     if gui_root:
         gui_should_close = True
@@ -41,8 +41,15 @@ def close_gui_safely():
         except:
             pass
 
+def start_gui_thread():
+    global gui_thread, gui_should_close
+    gui_should_close = False
+    gui_thread = threading.Thread(target=run_gui)
+    gui_thread.daemon = True
+    gui_thread.start()
+    print("Thread GUI démarré")
+
 def mouse_worker():
-    """Worker dédié pour les mouvements de souris avec limitation de fréquence"""
     last_move_time = 0
     min_interval = 0.01
     
@@ -51,7 +58,6 @@ def mouse_worker():
             action = mouse_queue.get(timeout=0.05)
             current_time = time.time()
             
-
             if current_time - last_move_time < min_interval:
                 continue
                 
@@ -80,7 +86,6 @@ def mouse_worker():
             print(f"Erreur mouse_worker: {e}")
 
 def general_worker():
-    """Worker pour les autres actions (clavier, système)"""
     while True:
         try:
             action = action_queue.get()
@@ -130,12 +135,16 @@ def logout():
     global client_connected
     session.clear()
     client_connected = False
+    
+    print("Déconnexion - Relancement de l'interface GUI...")
+    threading.Timer(1.0, start_gui_thread).start()
+    
     return redirect(url_for('login'))
 
 @app.route('/auto/<token>')
 def autologin(token):
     global client_connected, gui_root
-    if token.upper() == PASSWORD.upper():
+    if PASSWORD is not None and token.upper() == PASSWORD.upper():
         if client_connected:
             flash('Un utilisateur est déjà connecté. Veuillez réessayer plus tard.')
             return redirect(url_for('login'))
@@ -173,7 +182,6 @@ def dashboard():
 def api_mouse():
     data = request.get_json(silent=True) or {}
     data['type'] = 'mouse'
-    
     if data.get('action') == 'move':
         try:
             while mouse_queue.full():
@@ -184,7 +192,7 @@ def api_mouse():
                     break
             mouse_queue.put_nowait(data)
         except queue.Full:
-            pass 
+            pass
     else:
         try:
             mouse_queue.put_nowait(data)
@@ -266,9 +274,7 @@ if __name__ == '__main__':
     print("⚠️  N'EXPOSEZ PAS ce service sur Internet ⚠️")
     print("="*50)
 
-    gui_thread = threading.Thread(target=run_gui)
-    gui_thread.daemon = True
-    gui_thread.start()
+    start_gui_thread()
 
     try:
         app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
