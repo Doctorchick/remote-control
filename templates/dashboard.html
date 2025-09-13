@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Remote Control{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <header class="dashboard-header">
+        <h1>Remote Control</h1>
+        <a href="{{ url_for('logout') }}" class="btn btn-secondary">Logout</a>
+    </header>
+    
+    <div class="controls-grid">
+        <section class="control-section">
+            <h2>Mouse Control</h2>
+            <div class="mouse-pad" id="mousePad">
+                <div class="mouse-instructions">Touch Area</div>
+            </div>
+            <div class="mouse-buttons">
+                <button class="btn btn-primary" onclick="mouseClick('left')">Left Click</button>
+                <button class="btn btn-primary" onclick="mouseClick('double')">Double Click</button>
+            </div>
+        </section>
+        
+        <section class="control-section">
+            <h2>Keyboard</h2>
+            <div class="keyboard-controls">
+                <textarea id="textInput" placeholder="Type your text here..." rows="3"></textarea>
+                <button class="btn btn-primary" onclick="sendText()">Send Text</button>
+                
+                <div class="key-buttons">
+                    <button class="btn btn-secondary" onclick="sendKey('enter')">Enter</button>
+                    <button class="btn btn-secondary" onclick="sendKey('escape')">Escape</button>
+                    <button class="btn btn-secondary" onclick="sendKey('tab')">Tab</button>
+                    <button class="btn btn-secondary" onclick="sendKey('backspace')">⌫</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="control-section system-section">
+            <h2>System</h2>
+            <div class="system-controls">
+                <button class="btn btn-danger" onclick="confirmAction('shutdown')">Shutdown</button>
+                <button class="btn btn-warning" onclick="confirmAction('reboot')">Reboot</button>
+                <h2>By SamK</h2>
+            </div>
+        </section>
+    </div>
+    
+    <div class="status-bar" id="statusBar"></div>
+</div>
+
+<div id="confirmModal" class="modal">
+    <div class="modal-content">
+        <h3>Confirmation</h3>
+        <p id="confirmMessage"></p>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-danger" id="confirmButton">Confirm</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
